@@ -7,10 +7,10 @@ export default async function UsersPage() {
     const session = await getServerSession();
     if (!session) redirect("/login");
 
-    const users = (await prisma.user.findMany({
+    const users = await prisma.user.findMany({
         orderBy: { createdAt: 'desc' },
         include: { roles: { include: { role: true } } },
-    })) as any[];
+    });
 
     return (
         <div>
@@ -67,7 +67,7 @@ export default async function UsersPage() {
                                     </td>
                                     <td style={{ direction: 'ltr', textAlign: 'right' }}>{user.email}</td>
                                     <td>
-                                        {user.roles.map((ur: any) => (
+                                        {user.roles.map((ur) => (
                                             <span key={ur.roleId} className="badge badge-info" style={{ marginLeft: '4px' }}>
                                                 {ur.role.name}
                                             </span>

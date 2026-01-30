@@ -6,9 +6,9 @@ export default async function SettingsPage() {
     const session = await getServerSession();
     if (!session) redirect("/login");
 
-    const settings = (await prisma.setting.findMany({
+    const settings = await prisma.setting.findMany({
         orderBy: { key: 'asc' },
-    })) as any[];
+    });
 
     // Default settings structure
     const defaultSettings = {

@@ -3,7 +3,6 @@ import { redirect } from "next/navigation";
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 
-
 export default async function AdminDashboard() {
   const session = await getServerSession();
   if (!session) redirect("/login");
@@ -30,13 +29,11 @@ export default async function AdminDashboard() {
   ];
 
   // Get recent posts
-  const recentPosts = (await prisma.post.findMany({
+  const recentPosts = await prisma.post.findMany({
     take: 5,
     orderBy: { createdAt: 'desc' },
     include: { author: true },
-  })) as any[];
-
-
+  });
 
   return (
     <div>

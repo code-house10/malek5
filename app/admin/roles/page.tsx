@@ -7,13 +7,13 @@ export default async function RolesPage() {
     const session = await getServerSession();
     if (!session) redirect("/login");
 
-    const roles = (await prisma.role.findMany({
+    const roles = await prisma.role.findMany({
         orderBy: { createdAt: 'desc' },
         include: {
             users: true,
             permissions: { include: { permission: true } }
         },
-    })) as any[];
+    });
 
     return (
         <div>
@@ -55,7 +55,7 @@ export default async function RolesPage() {
                                     <td>{role.users.length} مستخدم</td>
                                     <td>
                                         <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px' }}>
-                                            {role.permissions.slice(0, 3).map((rp: any) => (
+                                            {role.permissions.slice(0, 3).map((rp) => (
                                                 <span key={rp.permissionId} className="badge badge-success" style={{ fontSize: '11px' }}>
                                                     {rp.permission.key}
                                                 </span>
