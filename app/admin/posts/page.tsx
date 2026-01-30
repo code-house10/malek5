@@ -7,10 +7,10 @@ export default async function PostsPage() {
     const session = await getServerSession();
     if (!session) redirect("/login");
 
-    const posts = await prisma.post.findMany({
+    const posts = (await prisma.post.findMany({
         orderBy: { createdAt: 'desc' },
         include: { author: true, coverMedia: true },
-    });
+    })) as any[];
 
     return (
         <div>
