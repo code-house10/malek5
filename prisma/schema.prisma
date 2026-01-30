@@ -1,0 +1,245 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum PostStatus {
+  DRAFT
+  PUBLISHED
+  ARCHIVED
+}
+
+enum MediaType {
+  IMAGE
+  VIDEO
+  FILE
+}
+
+/**
+ * -------------------------
+ * Core CMS models
+ * --------------------------
+ */
+
+model User {
+  id           String   @id @default(cuid())
+  name         String?
+  email        String   @unique
+  passwordHash String?
+  image        String?
+  isActive     Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  roles UserRole[]
+  posts Post[]     @relation("PostAuthor")
+
+  uploadedMedia   Media[]    @relation("UserUploadedMedia")
+  updatedSettings Setting[]  @relation("UserUpdatedSettings")
+  auditLogs       AuditLog[] @relation("UserAuditLogs")
+
+  // NextAuth
+  accounts Account[]
+  sessions Session[]
+}
+
+model Role {
+  id          String   @id @default(cuid())
+  name        String   @unique
+  description String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  users       UserRole[]
+  permissions RolePermission[]
+}
+
+model Permission {
+  id          String   @id @default(cuid())
+  key         String   @unique
+  description String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  roles RolePermission[]
+}
+
+model UserRole {
+  userId    String
+  roleId    String
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role Role @relation(fields: [roleId], references: [id], onDelete: Cascade)
+
+  @@id([userId, roleId])
+  @@index([roleId])
+}
+
+model RolePermission {
+  roleId       String
+  permissionId String
+  createdAt    DateTime @default(now())
+
+  role       Role       @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  permission Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+
+  @@id([roleId, permissionId])
+  @@index([permissionId])
+}
+
+model Post {
+  id          String     @id @default(cuid())
+  title       String
+  slug        String     @unique
+  excerpt     String?
+  contentJson Json?
+  contentHtml String?
+  status      PostStatus @default(DRAFT)
+
+  authorId String?
+  author   User?   @relation("PostAuthor", fields: [authorId], references: [id], onDelete: SetNull)
+
+  coverMediaId String?
+  coverMedia   Media?  @relation(fields: [coverMediaId], references: [id], onDelete: SetNull)
+
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  publishedAt DateTime?
+
+enum PostType {
+  POST
+  SERVICE
+  PROJECT
+  TESTIMONIAL
+}
+
+model Post {
+  id          String     @id @default(cuid())
+  title       String
+  slug        String     @unique
+  excerpt     String?
+  contentJson Json?
+  contentHtml String?
+  
+  type        PostType   @default(POST)
+  status      PostStatus @default(DRAFT)
+
+  authorId String?
+  author   User?   @relation("PostAuthor", fields: [authorId], references: [id], onDelete: SetNull)
+
+  coverMediaId String?
+  coverMedia   Media?  @relation(fields: [coverMediaId], references: [id], onDelete: SetNull)
+
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  publishedAt DateTime?
+
+  @@index([status])
+  @@index([type])
+  @@index([authorId])
+}
+
+model Media {
+  id        String    @id @default(cuid())
+  type      MediaType @default(IMAGE)
+  url       String
+  publicId  String?
+  fileName  String?
+  mimeType  String?
+  sizeBytes Int?
+  width     Int?
+  height    Int?
+
+  uploadedById String?
+  uploadedBy   User?   @relation("UserUploadedMedia", fields: [uploadedById], references: [id], onDelete: SetNull)
+
+  createdAt DateTime @default(now())
+
+  postsCover Post[]
+
+  @@index([type])
+  @@index([uploadedById])
+}
+
+model Setting {
+  id          String  @id @default(cuid())
+  key         String  @unique
+  value       Json
+  description String?
+
+  updatedById String?
+  updatedBy   User?   @relation("UserUpdatedSettings", fields: [updatedById], references: [id], onDelete: SetNull)
+
+  updatedAt DateTime @updatedAt
+  createdAt DateTime @default(now())
+}
+
+model AuditLog {
+  id String @id @default(cuid())
+
+  userId String?
+  user   User?   @relation("UserAuditLogs", fields: [userId], references: [id], onDelete: SetNull)
+
+  action    String
+  entity    String?
+  entityId  String?
+  meta      Json?
+  ip        String?
+  userAgent String?
+
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+  @@index([action])
+  @@index([entity, entityId])
+}
+
+/**
+ * -------------------------
+ * NextAuth models (Prisma Adapter)
+ * --------------------------
+ */
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String?
+  access_token      String?
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+  @@index([userId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
