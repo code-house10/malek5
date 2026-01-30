@@ -92,24 +92,6 @@ model RolePermission {
   @@index([permissionId])
 }
 
-model Post {
-  id          String     @id @default(cuid())
-  title       String
-  slug        String     @unique
-  excerpt     String?
-  contentJson Json?
-  contentHtml String?
-  status      PostStatus @default(DRAFT)
-
-  authorId String?
-  author   User?   @relation("PostAuthor", fields: [authorId], references: [id], onDelete: SetNull)
-
-  coverMediaId String?
-  coverMedia   Media?  @relation(fields: [coverMediaId], references: [id], onDelete: SetNull)
-
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
-  publishedAt DateTime?
 
 enum PostType {
   POST
